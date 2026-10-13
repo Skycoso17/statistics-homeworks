@@ -1,0 +1,259 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="Statistics Homework 1: an interactive statistical exploration of elliptic-curve scalar multiplication"><title>Inside the One-Way Function | Statistics Homework 1</title><link rel="stylesheet" href="style.css"></head><body>
+
+
+<header class="top">
+  <div class="wrap">
+    <nav class="nav">
+      <div class="brand">Statistics lab · Homework 1</div>
+      <div class="links">
+        <a href="#problem">Problem</a><a href="#idea">Idea</a><a href="#algorithm">Algorithm</a><a href="#animation">Animation</a>
+        <a href="#statistics">Statistics</a><a href="#discussion">Recap</a><a href="#conclusion">Conclusion</a>
+      </div>
+    </nav>
+    <div class="hero"><div class="hero-text">
+      <div class="eyebrow">An experiment in public-key cryptography</div>
+      <h1>Inside the One-Way Function</h1>
+      <p>An interactive exploration of elliptic-curve scalar multiplication, the operation that turns an Ethereum private key into a public key.</p>
+    </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- 01 PROBLEM -->
+  <section class="section" id="problem"><div class="wrap">
+    <div class="num"><span class="num-n">01</span><span class="num-t">The problem</span></div>
+    <h2>How can a key be public and secret at the same time?</h2>
+    <p class="lede">Every Ethereum (or Bitcoin) account is controlled by a single secret number, the <b>private key k</b>.
+      From it the wallet computes a <b>public key Q</b>, and from Q the <b>address</b> that you give to people who want to send you money.
+      Everybody can see Q and the address. Only the owner knows k, and only k can sign a transaction that spends the funds.
+      The whole system works only if one thing is true: <b>knowing Q must not reveal k</b>.</p>
+
+    <div class="flow">
+      <div class="flowbox"><div class="mini">Private key</div><strong>k</strong><div class="mini">secret 256-bit number</div></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="flowbox hl"><div class="mini">Elliptic-curve multiplication</div><strong>kG</strong><div class="mini">easy one way, hard back</div></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="flowbox"><div class="mini">Public key</div><strong>Q</strong><div class="mini">a point (x, y)</div></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="flowbox"><div class="mini">Keccak-256 hash</div><strong>0x…</strong><div class="mini">20-byte address</div></div>
+    </div>
+
+    <div class="two">
+      <div class="panel">
+        <h3>An everyday analogy</h3>
+        <p>Mixing two paints is easy; separating them again is practically impossible. Elliptic-curve multiplication behaves the same way.
+          Going from k to Q takes a few hundred operations on a laptop. Going from Q back to k, with the best known methods, takes about
+          2¹²⁸ operations: even at a billion billion operations per second that is around 10¹³ years, hundreds of times the age of the universe.</p>
+        <p class="mini">This is the Elliptic Curve Discrete Logarithm Problem (ECDLP): given Q and G, find k such that Q = kG.</p>
+      </div>
+      <div class="panel">
+        <h3>Where it is used in practice</h3>
+        <ul class="plain">
+          <li><b>Crypto wallets.</b> Whoever learns k owns the account. Billions in Ethereum and Bitcoin rely on this one step.</li>
+          <li><b>Digital signatures (ECDSA).</b> You prove you know k without ever revealing it.</li>
+          <li><b>Secure connections.</b> HTTPS and messaging apps use elliptic curves to agree on shared secret keys (ECDH).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="note"><b>What we study here.</b> We look at this function as statisticians. If we feed it many keys, what do the outputs look like?
+      Are they uniform, correlated with the input, sensitive to small changes like a hash function? And is “looking random” what makes it secure?
+      To see every value we use a toy curve with 18 points instead of about 10⁷⁷. It is completely insecure, but it works exactly like the real one.</div>
+  </div></section>
+
+  <!-- 02 IDEA -->
+  <section class="section" id="idea"><div class="wrap">
+    <div class="num"><span class="num-n">02</span><span class="num-t">The idea</span></div>
+    <h2>Jumping is easy, counting the jumps is hard</h2>
+    <p class="lede">Think of G as a fixed <b>jump</b> on the curve. The public key Q = kG is where you land after k jumps.
+      With ordinary numbers this could be undone at once: 6 × 5 = 30, and 30 ÷ 5 = 6. On an elliptic curve over a finite field
+      <b>there is no division of points</b>. The multiples of G land in an order that looks scrambled, so seeing where you ended
+      tells you nothing about how many jumps you made. The only general method is to search.</p>
+
+    <div class="two">
+      <div class="panel">
+        <h3>Ordinary multiplication keeps the order</h3>
+        <div id="ideaInt"></div>
+        <p class="mini">The value 5·k grows steadily with k. Given the result, k is found with one division.</p>
+      </div>
+      <div class="panel">
+        <h3>Point multiplication scrambles it</h3>
+        <div id="ideaEc"></div>
+        <p class="mini">The x-coordinate of kG jumps around with no trend. There is no “bigger means more jumps” to exploit.</p>
+      </div>
+    </div>
+
+    <h3>The asymmetry in numbers</h3>
+    <p class="lede">The forward direction uses the binary digits of k, so its cost grows with the <b>number of digits</b> (log₂ n).
+      Going backwards costs about <b>√n</b> even with the best known algorithm (Pollard’s rho). The gap explodes as the group grows.</p>
+    <div class="tablewrap">
+      <table class="grid-table">
+        <thead><tr><th>Group size n</th><th>Forward: compute kG<br><span class="mini">≈ 2·log₂ n operations</span></th><th>Backward: brute force<br><span class="mini">≈ n tries</span></th><th>Backward: best attack<br><span class="mini">≈ √n operations</span></th></tr></thead>
+        <tbody>
+          <tr><td>9 (our toy, G = (1, 5))</td><td>≈ 6</td><td>9</td><td>3</td></tr>
+          <tr><td>2³²</td><td>64</td><td>4.3 · 10⁹</td><td>65 536</td></tr>
+          <tr><td>2⁶⁴</td><td>128</td><td>1.8 · 10¹⁹</td><td>4.3 · 10⁹</td></tr>
+          <tr class="hlrow"><td>≈ 2²⁵⁶ (secp256k1, Ethereum)</td><td>≈ 512</td><td>1.2 · 10⁷⁷</td><td>3.4 · 10³⁸</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div></section>
+
+  <!-- 03 ALGORITHM -->
+  <section class="section" id="algorithm"><div class="wrap">
+    <div class="num"><span class="num-n">03</span><span class="num-t">The algorithm</span></div>
+    <h2>From adding two points to computing kG</h2>
+
+    <div class="stepcard">
+      <div class="stepnum">Step 1</div>
+      <div class="stepbody">
+        <h3>Adding two points: the chord-and-tangent rule</h3>
+        <p>Over the real numbers the curve y² = x³ + 7 is a smooth line, and any straight line crosses it in <b>three points</b>.
+          To add P and Q: draw the line through them, find the third intersection −R, then reflect it across the x-axis to get R = P + Q.
+          To double a point (P + P) the line is the <b>tangent</b> at P. A vertical line meets the curve “at infinity”: that extra point O works like zero, so P + (−P) = O.</p>
+        <div class="two curvebox">
+          <div><div id="realCurve"></div>
+            <div class="controls tight"><button id="rcAdd" class="secondary" aria-pressed="true">P + Q</button><button id="rcDbl" class="secondary" aria-pressed="false">P + P (doubling)</button></div>
+          </div>
+          <div id="rcText" class="calcbox"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stepcard">
+      <div class="stepnum">Step 2</div>
+      <div class="stepbody">
+        <h3>The same rule, with arithmetic modulo 17</h3>
+        <p>Cryptography cannot use real numbers (rounding errors, infinite precision), so every coordinate is an integer from 0 to 16 and every
+          result is taken modulo 17. The geometry disappears but the formulas stay the same:</p>
+        <div class="two">
+          <pre class="formulas">λ = (y₂ − y₁) / (x₂ − x₁)    slope of the line P–Q
+λ = (3x₁² + a) / (2y₁)       slope of the tangent (P = Q)
+x₃ = λ² − x₁ − x₂
+y₃ = λ(x₁ − x₃) − y₁         every result mod 17, a = 0</pre>
+          <div>
+            <p><b>Division is a modular inverse.</b> “1 / 10 mod 17” is the number that multiplied by 10 gives 1: it is 12, because
+              10 · 12 = 120 = 7 · 17 + 1. We find it with the extended Euclidean algorithm.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stepcard">
+      <div class="stepnum">Step 3</div>
+      <div class="stepbody">
+        <h3>From addition to multiplication: kG</h3>
+        <div class="two">
+          <div>
+            <p><b>Repeated addition</b> computes G, 2G, 3G, …, kG: k − 1 additions. Simple, but useless for a 256-bit k.</p>
+            <p><b>Double-and-add</b> reads k in binary, from the left. For every bit it <b>doubles</b> the current point, and when the bit is 1 it also
+              <b>adds G</b>. The number of operations is about twice the number of bits.</p>
+          </div>
+          <div>
+            <p class="mini"><b>Worked example: k = 6 = 110₂</b></p>
+            <div class="binary-example"><p><b>Start:</b> G = (1, 5)</p><p><b>Read 1:</b> double G, then add G → 3G = (5, 9)</p><p><b>Read 0:</b> double 3G → <b>6G = (5, 8)</b></p></div>
+            <p class="mini">Two doubling operations and one addition after initialization. The animation in section 04 follows the same computation step by step.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div></section>
+
+  <!-- 04 ANIMATION -->
+  <section class="section" id="animation"><div class="wrap">
+    <div class="num"><span class="num-n">04</span><span class="num-t">Slowed-down algorithm</span></div>
+    <h2>Follow the point, one operation at a time</h2>
+    <p class="meta-line">G = (1, 5) &nbsp;·&nbsp; k = 6 &nbsp;·&nbsp; repeated addition: G, 2G, …, 6G</p>
+    <p class="lede">The same algorithm is shown twice. <b>On the left</b>, on the smooth curve y² = x³ + 7 over the real numbers, where every
+      step is a line: through the two inputs (or tangent when doubling), to the third point −R, then a reflection to R.
+      <b>On the right</b>, the actual computation modulo 17, where the curve is just a set of points and the same formulas give the result.</p>
+    <div class="panel tool">
+      <div class="controls">
+        <button id="prev" class="secondary">← Previous</button>
+        <button id="next">Next step →</button>
+        <button id="play" class="secondary">▶ Play</button>
+        <button id="reset" class="secondary">Reset</button>
+        <label>Speed <input id="speed" type="range" min="400" max="3000" step="100" value="1600"><span id="speedLbl"></span></label>
+      </div>
+      <div class="viz2">
+        <figure class="vizfig">
+          <figcaption>Geometric picture · real curve <span class="mini" id="zoomNote"></span></figcaption>
+          <svg id="realPlot" viewBox="0 0 440 400" aria-label="The current step drawn on the real curve"></svg>
+        </figure>
+        <figure class="vizfig">
+          <figcaption>Actual computation · curve mod 17</figcaption>
+          <svg id="plot" viewBox="0 0 440 440" aria-label="The current step on the points of the curve modulo 17"></svg>
+        </figure>
+      </div>
+      <div id="stepInfo" class="stepinfo" aria-live="polite"></div>
+      <div class="strips">
+        <div><div class="strip-label">Position in the cycle of G (the multiples repeat after n steps)</div><div id="cycleStrip" class="chips"></div></div>
+        <div id="bitWrap"><div class="strip-label">Bits of k read by double-and-add</div><div id="bitStrip" class="chips"></div></div>
+      </div>
+      <div class="legend"><span><i class="swatch dots"></i> Curve points</span><span><i class="swatch green"></i> Line / addition</span><span><i class="swatch blue"></i> Tangent / doubling</span><span><i class="swatch redd"></i> Third point −R</span><span><i class="swatch ring"></i> Result R</span></div>
+      <div id="animInterpretation" class="interpretation" aria-live="polite"></div>
+    </div>
+  </div></section>
+
+  <!-- 05 STATISTICS -->
+  <section class="section" id="statistics"><div class="wrap">
+    <div class="num"><span class="num-n">05</span><span class="num-t">Statistical exploration</span></div>
+    <h2>What can we observe in the public points?</h2>
+    <p class="lede">We repeat <b>Q = kG</b> for different keys, count what appears, and draw a few graphs. Every experiment follows a clear path: what we do, what the numbers show, and what we can conclude. We also repeat measurements with new keys where it makes sense.</p>
+    <div class="panel lab-controls">
+      <h3>Repeat the experiment with different keys and base points</h3>
+      <div class="controls">
+        <label>Valid base point G
+          <select id="statBase"><option value="1,5">(1, 5) — 8 finite outputs</option><option value="6,6">(6, 6) — 17 finite outputs</option></select>
+        </label>
+        <label>Private key k <input id="statKey" type="number" value="6" min="1" max="8" step="1"></label>
+        <button id="statTry">Compute kG</button>
+      </div>
+      <div id="statTrial" class="trial-result" aria-live="polite"></div>
+      <p class="mini">The animation in section 04 uses the original example G = (1, 5), k = 6. The experiments below use your selected base point.</p>
+    </div>
+
+    <article class="exp"><header><span class="exp-num">1</span><div><span class="guide-tag">Coordinate distributions · value frequencies</span><h3>Which X and Y values appear, and how often?</h3></div></header>
+      <p>First we generate <b>all the different finite public points</b> and count which X and Y values occur. Then we use <b>240 random keys</b> to see how these same coordinates occur when we repeat the process. The graphs show the possible values, while the tables explain the numbers.</p>
+      <div class="controls"><button id="statCoordDraw" class="secondary">Generate 240 new keys for X and Y</button></div><div id="simpleDist"></div>
+    </article>
+
+    <article class="exp"><header><span class="exp-num">2</span><div><span class="guide-tag">Apparent uniformity</span><h3>Why do we sample random keys, and what can we learn?</h3></div></header>
+      <p>We randomly choose <b>240 private keys</b> between 1 and the order of G minus 1 (repetitions are allowed). We then compute each public point. <b>Purpose:</b> compare how often each point actually appears with how often we would expect it to appear if all keys are equally likely. A small table makes this easy to check.</p>
+      <button id="statDraw">Draw 240 random keys</button>
+      <div id="statUniform" aria-live="polite"></div>
+    </article>
+
+    <article class="exp"><header><span class="exp-num">3</span><div><span class="guide-tag">Bit distribution</span><h3>Are the bits in X and Y balanced?</h3></div></header>
+      <p>A public point has two coordinates, X and Y. We write each value using <b>5 bits</b> (for example, 5 = 00101). First we read the binary representation of <b>all distinct finite points</b>. Then we enlarge the observation to <b>240 randomly sampled keys</b>, allowing repeated points. We compare the percentage of 1s in each bit position with the exact percentage. This makes it easier to see which bits are more common and why.</p>
+      <div class="controls"><button id="statBitDraw" class="secondary">Generate 240 new keys</button></div>
+      <div id="simpleBits"></div>
+    </article>
+
+    <article class="exp"><header><span class="exp-num">4</span><div><span class="guide-tag">Avalanche-like behaviour</span><h3>What happens when one input bit changes?</h3></div></header>
+      <p>We start with two valid keys that differ by <b>one bit</b> and watch the difference spread through their public-point representations. The animation shows one example; a short table also compares <b>all valid one-bit key pairs</b> on this small curve, so our observation does not rely on one example alone.</p>
+      <div id="simpleAvalanche"></div>
+    </article>
+  </div></section>
+  <section class="section discussion" id="discussion"><div class="wrap">
+    <div class="num"><span class="num-n">06</span><span class="num-t">Recap</span></div>
+    <h2>What did we observe?</h2>
+    <p class="lede">We looked at our results from four different angles. Here is what they show us about the points our algorithm produces, and what we can — and cannot — learn from those observations.</p>
+    <div id="overallFinding" class="final-finding" aria-live="polite"></div>
+  </div></section>
+  <section class="section discussion" id="conclusion"><div class="wrap">
+    <div class="num"><span class="num-n">07</span><span class="num-t">Conclusion</span></div>
+    <h2>What does all this tell us?</h2>
+    <p class="lede">Our experiments show that multiplying a key by a point is a predictable mathematical operation, but the resulting coordinates and bits can look irregular. By collecting and comparing data, we learned how the outputs are distributed, how often they appear, and what happens when we slightly change the input.</p>
+    <div class="conclusion-last"><b>What matters for our algorithm?</b> None of these observations alone tells us whether the algorithm is secure. The real purpose of elliptic-curve multiplication is that calculating a public point from a private key is easy, while finding the private key from the public point should be extremely difficult on a suitably large curve.</div>
+  </div></section>
+  </main>
+
+
+<script src="app.js"></script>
+<script src="editor.js"></script>
+
+
+</body></html>
