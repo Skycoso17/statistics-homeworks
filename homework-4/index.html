@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Homework 4 - Stochastic Penetration Process</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="hero">
+    <div class="container">
+      <p class="eyebrow">Statistics Homework · 4</p>
+      <h1>Stochastic Penetration Process</h1>
+      <p class="hero-copy">From random penetration attempts to predictable large-scale behavior: Bernoulli and Rademacher models, Law of Large Numbers, variance scaling and Central Limit Theorem.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card intro-grid">
+      <div>
+        <span class="section-number">01</span>
+        <h2>Starting point and purpose of the project</h2>
+        <p>Suppose we want to describe the activity of several attackers against a collection of systems. The result of a single penetration step is uncertain, so it is natural to represent it with a random variable <span class="math">X<sub>i</sub></span>.</p>
+        <p>Instead of trying to predict every single attack, the goal of this homework is to understand what happens <strong>when the number of systems becomes large</strong>. We want to see whether random behavior remains completely unpredictable or whether regular statistical patterns emerge.</p>
+        <p>For every attacker we observe a sequence <span class="math">X<sub>1</sub>, X<sub>2</sub>, ..., X<sub>n</sub></span> of independent and identically distributed increments. We then study the accumulated score, its average and a square-root normalization.</p>
+        <div class="formula-stack">
+          <div><span>S<sub>n</sub></span><small>Total score</small></div>
+          <div><span>S<sub>n</sub>/n</span><small>Average score</small></div>
+          <div><span>S<sub>n</sub>/√n</span><small>Normalized total score</small></div>
+        </div>
+      </div>
+      <div class="model-panel">
+        <article>
+          <h3>Bernoulli model</h3>
+          <p class="big-formula">X<sub>i</sub> ∈ {0,1}</p>
+          <p><strong>1</strong> means successful penetration.<br><strong>0</strong> means unsuccessful penetration.</p>
+          <p>The parameter <span class="math">p</span> is the probability of success at each step.</p>
+        </article>
+        <article>
+          <h3>Rademacher model</h3>
+          <p class="big-formula">X<sub>i</sub> ∈ {-1,+1}</p>
+          <p><strong>+1</strong> means progress for the attacker.<br><strong>-1</strong> means an equally strong negative step.</p>
+          <p>This model is symmetric, so its expected increment is zero.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="card">
+      <span class="section-number">02</span>
+      <h2>How to read n and m</h2>
+      <div class="concept-grid">
+        <article>
+          <h3>n = systems / penetration steps</h3>
+          <p><span class="math">n</span> controls the length of one attack process. Increasing <span class="math">n</span> lets us study long-run behavior and is what makes the Law of Large Numbers and the Central Limit Theorem visible.</p>
+        </article>
+        <article>
+          <h3>m = attackers / independent repetitions</h3>
+          <p><span class="math">m</span> is the number of independent trajectories that we simulate. Increasing <span class="math">m</span> does not change the theoretical distribution of one attacker; it gives us a more accurate empirical picture of that distribution.</p>
+        </article>
+        <article>
+          <h3>What we want to compare</h3>
+          <p>For increasing <span class="math">n</span> we compare the behavior of <span class="math">S<sub>n</sub></span>, <span class="math">S<sub>n</sub>/n</span> and <span class="math">S<sub>n</sub>/√n</span>, paying special attention to their means, variances and shapes.</p>
+        </article>
+      </div>
+      <div class="narrative">
+        <strong>Main question.</strong> Can a process made of unpredictable individual steps become predictable when viewed on the right scale? The following experiments answer this question progressively.
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <span class="section-number">03</span>
+          <h2>Interactive simulation</h2>
+        </div>
+        <span id="activeModelBadge" class="badge">Bernoulli model</span>
+      </div>
+      <p>Choose the system size, the number of simulated attackers and, for the Bernoulli model, the penetration probability. Every time a simulation is run, a new random sample is generated.</p>
+
+      <div class="controls">
+        <label>Systems / steps <strong>n</strong>
+          <input id="systems" type="range" min="10" max="1500" step="10" value="500" />
+          <span id="systemsValue" class="control-value">500</span>
+        </label>
+        <label>Attackers <strong>m</strong>
+          <input id="attackers" type="range" min="50" max="5000" step="50" value="1000" />
+          <span id="attackersValue" class="control-value">1000</span>
+        </label>
+        <label>Bernoulli probability <strong>p</strong>
+          <input id="probability" type="range" min="0.05" max="0.95" step="0.05" value="0.30" />
+          <span id="probabilityValue" class="control-value">0.30</span>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="runBernoulli" class="primary">Run Bernoulli</button>
+        <button id="runRademacher">Run Rademacher</button>
+        <button id="newSample" class="ghost">New sample</button>
+      </div>
+
+      <div class="stat-grid" id="statsGrid">
+        <div><span>Mean S<sub>n</sub></span><strong id="meanTotal">–</strong></div>
+        <div><span>Var(S<sub>n</sub>)</span><strong id="varianceTotal">–</strong></div>
+        <div><span>Mean S<sub>n</sub>/n</span><strong id="meanAverage">–</strong></div>
+        <div><span>Var(S<sub>n</sub>/n)</span><strong id="varianceAverage">–</strong></div>
+        <div><span>Var(S<sub>n</sub>/√n)</span><strong id="varianceNormalized">–</strong></div>
+      </div>
+      <div class="insight" id="simulationSummary"></div>
+    </section>
+
+    <section class="card">
+      <span class="section-number">04</span>
+      <h2>Step 1 — Look at individual sample trajectories</h2>
+      <p class="lead">Before studying distributions, it is useful to see what a single realization of the random process looks like. Each curve below represents one attacker and shows the cumulative score <span class="math">S<sub>k</sub></span> as the number of steps <span class="math">k</span> increases.</p>
+      <div class="narrative"><strong>What should we look for?</strong> In the Bernoulli case trajectories can only increase because increments are 0 or 1. In the Rademacher case trajectories can move in both directions because increments are ±1.</div>
+      <div class="chart-wrap"><canvas id="trajectoryChart"></canvas></div>
+      <div class="insight" id="trajectoryText"></div>
+    </section>
+
+    <section class="card">
+      <span class="section-number">05</span>
+      <h2>Step 2 — Compare the three requested distributions</h2>
+      <p>The homework asks us to study three different quantities. They contain the same raw score, but the normalization changes their statistical behavior completely.</p>
+      <div class="distribution-grid">
+        <div>
+          <h3>Total score S<sub>n</sub></h3>
+          <p>The absolute accumulated penetration score. Its variance grows with <span class="math">n</span>.</p>
+          <div class="chart-wrap small-chart"><canvas id="totalChart"></canvas></div>
+        </div>
+        <div>
+          <h3>Average S<sub>n</sub>/n</h3>
+          <p>The score per system. Its variance decreases with <span class="math">n</span>, so the distribution concentrates around the expected increment.</p>
+          <div class="chart-wrap small-chart"><canvas id="averageDistributionChart"></canvas></div>
+        </div>
+        <div>
+          <h3>Normalized S<sub>n</sub>/√n</h3>
+          <p>The square-root scaling preserves the natural order of random fluctuations instead of making them explode or disappear.</p>
+          <div class="chart-wrap small-chart"><canvas id="normalizedDistributionChart"></canvas></div>
+        </div>
+      </div>
+      <div class="insight" id="distributionInsight"></div>
+    </section>
+
+
+    <section class="card theory-section">
+      <span class="section-number">06</span>
+      <h2>Before going further — What is variance?</h2>
+      <p class="lead">The <strong>variance</strong> tells us how spread out the possible results are around their mean. It is a measure of uncertainty or variability.</p>
+      <p>Two random processes can have the same average but behave very differently. One may stay close to its mean most of the time, while the other may produce values that are often far away. The variance is what allows us to distinguish these two situations.</p>
+      <div class="concept-grid">
+        <article>
+          <h3>Mean</h3>
+          <p>The mean tells us the <strong>center</strong> of the distribution: the value around which the results are balanced on average.</p>
+        </article>
+        <article>
+          <h3>Variance</h3>
+          <p>The variance tells us how far the observations typically spread around that center. A small variance means that the results are concentrated; a large variance means that they are more dispersed.</p>
+        </article>
+        <article>
+          <h3>Why square the deviations?</h3>
+          <p>Positive and negative deviations would otherwise cancel each other. Squaring them makes every deviation positive and gives more weight to large deviations.</p>
+        </article>
+      </div>
+      <p class="big-formula">Var(X) = E[(X - μ)²]</p>
+      <p>In words: we measure the distance between each possible value and the mean, square that distance, and then average those squared distances.</p>
+      <div class="narrative"><strong>Why do we need variance in this homework?</strong> Because the three quantities <span class="math">S<sub>n</sub></span>, <span class="math">S<sub>n</sub>/n</span> and <span class="math">S<sub>n</sub>/√n</span> have very different variances. Studying those variances tells us whether randomness is growing, disappearing or remaining visible when <span class="math">n</span> increases.</div>
+      <p><strong>Simple example.</strong> In the Rademacher model the mean is 0, but the total score does not stay fixed at 0. Its variance is <span class="math">n</span>, so the possible totals spread farther from zero as the experiment becomes longer. After dividing by <span class="math">n</span>, instead, the variance becomes <span class="math">1/n</span>, so the average becomes more and more concentrated around 0.</p>
+    </section>
+
+    <section class="card theory-section">
+      <span class="section-number">07</span>
+      <h2>Before the experiment — What is the Law of Large Numbers?</h2>
+      <p class="lead">The <strong>Law of Large Numbers (LLN)</strong> explains why averages become stable when we repeat the same random experiment many times.</p>
+      <p>Suppose that <span class="math">X<sub>1</sub>, X<sub>2</sub>, ..., X<sub>n</sub></span> are independent and identically distributed random variables with expected value <span class="math">E[X]=μ</span>. Their sample average is</p>
+      <p class="big-formula">S<sub>n</sub>/n = (X<sub>1</sub> + X<sub>2</sub> + ... + X<sub>n</sub>)/n.</p>
+      <p>The Law of Large Numbers states that, as <span class="math">n</span> becomes large, this empirical average becomes increasingly close to the theoretical mean:</p>
+      <p class="big-formula">S<sub>n</sub>/n → μ &nbsp; in probability.</p>
+      <div class="concept-grid">
+        <article>
+          <h3>Intuitive meaning</h3>
+          <p>With only a few observations, the average can move a lot because every new result has a strong influence. With hundreds or thousands of observations, one additional result has a much smaller effect, so the average becomes more stable.</p>
+        </article>
+        <article>
+          <h3>Bernoulli case</h3>
+          <p>Here <span class="math">E[X]=p</span>. Therefore the fraction of successful penetrations <span class="math">S<sub>n</sub>/n</span> should approach <span class="math">p</span>. If <span class="math">p=0.30</span>, a long experiment should show about 30% successes.</p>
+        </article>
+        <article>
+          <h3>Rademacher case</h3>
+          <p>Here <span class="math">E[X]=0</span>. Therefore the average score should approach 0. This does <strong>not</strong> mean that the total score itself becomes zero; it means that the total becomes small compared with the number of steps.</p>
+        </article>
+      </div>
+      <div class="narrative"><strong>Key idea.</strong> The LLN answers the question: <em>where does the average go?</em> It tells us about long-run stability, not about the detailed shape of the remaining random fluctuations.</div>
+    </section>
+
+    <section class="card">
+      <span class="section-number">08</span>
+      <h2>Step 3 — Observe the Law of Large Numbers</h2>
+      <p class="lead">The Law of Large Numbers concerns the average <span class="math">S<sub>n</sub>/n</span>. We therefore follow the running average <span class="math">S<sub>k</sub>/k</span> along several trajectories and ask whether it stabilizes.</p>
+      <div class="narrative"><strong>Theoretical expectation.</strong> For Bernoulli increments, <span class="math">E[X]=p</span>, so the average should approach <span class="math">p</span>. For Rademacher increments, <span class="math">E[X]=0</span>, so the average should approach 0.</div>
+      <div class="chart-wrap"><canvas id="averageChart"></canvas></div>
+      <div class="insight" id="llnInsight"></div>
+      <p>The important point is that convergence of the average does <strong>not</strong> mean that randomness disappears from the total score. It means that the total score becomes predictable <em>relative to the number of steps</em>.</p>
+    </section>
+
+    <section class="card">
+      <span class="section-number">09</span>
+      <h2>Step 4 — Why the normalization changes the variance</h2>
+      <p>If the increments have variance <span class="math">σ²</span>, independence gives <span class="math">Var(S<sub>n</sub>) = nσ²</span>. From this one formula we can understand all three scales.</p>
+      <div class="variance-cards">
+        <div><span>Total</span><strong>Var(S<sub>n</sub>) = nσ²</strong><small>grows linearly with n</small></div>
+        <div><span>Average</span><strong>Var(S<sub>n</sub>/n) = σ²/n</strong><small>shrinks to 0</small></div>
+        <div><span>Normalized</span><strong>Var(S<sub>n</sub>/√n) = σ²</strong><small>remains constant</small></div>
+      </div>
+      <p>This explains why the three graphs behave so differently. Dividing by <span class="math">n</span> is strong enough to suppress fluctuations; dividing by <span class="math">√n</span> exactly compensates for their natural growth.</p>
+      <div class="chart-wrap"><canvas id="varianceChart"></canvas></div>
+      <div class="insight" id="varianceInsight"></div>
+    </section>
+
+    <section class="card theory-section">
+      <span class="section-number">10</span>
+      <h2>Before the experiment — What is the Central Limit Theorem?</h2>
+      <p class="lead">The <strong>Central Limit Theorem (CLT)</strong> explains what the <em>distribution of many accumulated random effects</em> looks like when the number of independent steps becomes large.</p>
+
+      <div class="narrative"><strong>The simplest idea first.</strong> Imagine repeating a random step many times and adding all the results. The exact total is still random, but after the right rescaling the collection of many possible totals begins to form the familiar bell shape of a normal distribution.</div>
+
+      <p>This is different from the Law of Large Numbers. The LLN tells us that the <strong>average</strong> becomes stable. The CLT tells us what happens to the <strong>remaining random fluctuations around that average</strong>.</p>
+
+      <div class="concept-grid">
+        <article>
+          <h3>1. Start from the total</h3>
+          <p>We add the increments and obtain <span class="math">S<sub>n</sub></span>. If <span class="math">n</span> grows, this total can spread more and more because more random contributions are being accumulated.</p>
+        </article>
+        <article>
+          <h3>2. Remove the expected part</h3>
+          <p>The expected total is <span class="math">nμ</span>. Subtracting it leaves only the random deviation from what we expected to happen.</p>
+        </article>
+        <article>
+          <h3>3. Rescale the fluctuations</h3>
+          <p>The natural size of those fluctuations is <span class="math">σ√n</span>. Dividing by this quantity puts experiments with different <span class="math">n</span> on the same scale.</p>
+        </article>
+      </div>
+
+      <p class="big-formula">(S<sub>n</sub> − nμ) / (σ√n) &nbsp; → &nbsp; N(0,1)</p>
+
+      <p><strong>What does each symbol mean?</strong> <span class="math">μ</span> is the mean of one increment, <span class="math">σ</span> is its standard deviation, <span class="math">nμ</span> is the expected total after <span class="math">n</span> steps, and <span class="math">σ√n</span> is the natural scale of the random fluctuations.</p>
+
+      <p><strong>What is N(0,1)?</strong> It is the standard normal distribution: a symmetric bell-shaped distribution with mean 0 and variance 1. Values near 0 are the most common, while very large positive or negative deviations are increasingly rare.</p>
+
+      <p><strong>Why is this useful?</strong> It allows us to approximate a complicated distribution of accumulated random effects with a simple and well-known normal distribution. Once we have that approximation, probabilities, confidence ranges and unusual deviations become much easier to study.</p>
+
+      <p><strong>Why is the Rademacher model especially convenient here?</strong> Because for one Rademacher increment we already have <span class="math">μ=0</span> and <span class="math">σ=1</span>. Therefore the general formula simplifies to</p>
+      <p class="big-formula">S<sub>n</sub>/√n &nbsp; → &nbsp; N(0,1).</p>
+
+      <div class="narrative"><strong>What we will look for in the graph.</strong> For small <span class="math">n</span>, the normalized score still has a visibly discrete distribution because each increment is only -1 or +1. As <span class="math">n</span> grows, the histogram should become smoother and increasingly similar to the normal bell curve. The individual data do not become normal; it is the <em>distribution of the normalized sum</em> that becomes approximately normal.</div>
+    </section>
+
+    <section class="card">
+      <span class="section-number">11</span>
+      <h2>Step 5 — Observe the Central Limit Theorem in the Rademacher case</h2>
+      <p class="lead">The Rademacher model has mean 0 and variance 1. Therefore no centering or additional variance correction is needed: the Central Limit Theorem predicts that <span class="math">S<sub>n</sub>/√n</span> converges in distribution to <span class="math">N(0,1)</span>.</p>
+      <div class="narrative"><strong>What does “convergence in distribution” mean here?</strong> It does not mean that every simulated value becomes 0. It means that the <em>shape of the distribution</em> of the normalized scores becomes increasingly close to the standard bell curve.</div>
+      <div class="clt-controls">
+        <label>Compare CLT at n =
+          <select id="cltN">
+            <option value="10">10</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="500" selected>500</option>
+            <option value="1000">1000</option>
+          </select>
+        </label>
+      </div>
+      <div class="chart-wrap"><canvas id="cltChart"></canvas></div>
+      <div class="insight" id="cltInsight">The bars are simulated Rademacher data; the line is the theoretical density of <span class="math">N(0,1)</span>. Try changing n from 10 to 1000: the discrete distribution progressively takes the shape of the normal curve.</div>
+      <p><strong>Why is the Rademacher case special in this homework?</strong> Because <span class="math">E[X]=0</span> and <span class="math">Var(X)=1</span>. For Bernoulli variables the corresponding CLT quantity would instead be <span class="math">(S<sub>n</sub>-np)/√(np(1-p))</span>.</p>
+    </section>
+
+    <section class="card">
+      <span class="section-number">12</span>
+      <h2>Step 6 — What changes when we increase the number of attackers m?</h2>
+      <p>The number of attackers <span class="math">m</span> controls how many independent realizations we observe. A small <span class="math">m</span> can produce noisy empirical statistics simply because the sample is small. A large <span class="math">m</span> gives estimates that are usually much closer to the theoretical values.</p>
+      <div class="chart-wrap"><canvas id="mEffectChart"></canvas></div>
+      <div class="insight" id="mInsight"></div>
+      <p>This distinction is fundamental: increasing <span class="math">n</span> changes the asymptotic regime of each stochastic process, while increasing <span class="math">m</span> mainly improves how accurately we can <em>observe</em> that regime in a simulation.</p>
+    </section>
+
+    <section class="card">
+      <span class="section-number">13</span>
+      <h2>Statistical interpretation of the current experiment</h2>
+      <p>We can now compare the simulated quantities with their theoretical values. The numbers below are regenerated every time a new sample is drawn, so small deviations are expected.</p>
+      <div class="analysis-table-wrap">
+        <table class="analysis-table">
+          <thead><tr><th>Quantity</th><th>Theory</th><th>Simulation</th><th>Interpretation</th></tr></thead>
+          <tbody id="analysisTableBody"></tbody>
+        </table>
+      </div>
+      <div class="insight" id="finalAnalysis"></div>
+    </section>
+
+    <section class="card">
+      <span class="section-number">14</span>
+      <h2>What do we observe in the experiment as a whole, and why is it useful?</h2>
+      <p class="lead">The purpose of the homework is not simply to generate random trajectories. It is to show that the <strong>same underlying random process looks very different depending on the scale at which we observe it</strong>.</p>
+      <div class="concept-grid">
+        <article>
+          <h3>Microscopic view</h3>
+          <p>At the level of one step, the outcome is unpredictable. A Bernoulli attempt may succeed or fail; a Rademacher step may be +1 or -1. Statistics does not remove this uncertainty.</p>
+        </article>
+        <article>
+          <h3>Macroscopic view</h3>
+          <p>After many independent steps, regular patterns emerge. The average becomes predictable, the variance follows precise scaling laws, and the normalized fluctuations acquire a stable shape.</p>
+        </article>
+        <article>
+          <h3>Why this matters</h3>
+          <p>In real systems we often cannot predict a single event, but we still need to estimate aggregate risk. These results let us reason about expected penetration rates, uncertainty around those rates and the probability of unusually large deviations.</p>
+        </article>
+      </div>
+      <p><strong>Role of n.</strong> Increasing <span class="math">n</span> means observing a longer process. This is what reveals the Law of Large Numbers and the Central Limit Theorem: the average stabilizes and the normalized fluctuations approach a normal law.</p>
+      <p><strong>Role of m.</strong> Increasing <span class="math">m</span> means observing more independent attackers. It does not change the law of one attacker, but it gives us a cleaner histogram and more accurate empirical estimates of mean and variance.</p>
+      <p><strong>Bernoulli interpretation.</strong> The long-run fraction of successful penetrations approaches <span class="math">p</span>. Therefore, although we cannot know which specific systems will be penetrated, we can estimate the overall success rate when the number of systems is large.</p>
+      <p><strong>Rademacher interpretation.</strong> There is no systematic drift because positive and negative steps are equally likely. Nevertheless, the accumulated score can wander far from zero. The typical size of this wandering is of order <span class="math">√n</span>, which is exactly why the normalization by <span class="math">√n</span> is the correct one for the CLT.</p>
+      <div class="narrative"><strong>Central lesson.</strong> The experiment shows three complementary ideas: the <strong>mean</strong> describes the expected direction, the <strong>variance</strong> describes how uncertain the result is around that direction, and the <strong>CLT</strong> describes the shape of those fluctuations when many independent contributions are aggregated.</div>
+    </section>
+
+    <section class="card conclusion">
+      <span class="section-number">15</span>
+      <h2>Conclusions</h2>
+      <p><strong>1. Individual steps remain random.</strong> Nothing in the simulation allows us to predict the next increment with certainty. The regularity appears only when many independent steps are aggregated.</p>
+      <p><strong>2. The Law of Large Numbers controls the average.</strong> The quantity <span class="math">S<sub>n</sub>/n</span> converges in probability to the expected increment: <span class="math">p</span> for Bernoulli and 0 for Rademacher.</p>
+      <p><strong>3. Different normalizations reveal different phenomena.</strong> The variance of the total score grows like <span class="math">n</span>, the variance of the average decays like <span class="math">1/n</span>, and the square-root normalization preserves a constant amount of variability.</p>
+      <p><strong>4. The Central Limit Theorem describes the remaining fluctuations.</strong> In the Rademacher case, after dividing by <span class="math">√n</span>, the distribution tends to the standard normal law even though each original increment takes only the values -1 and +1.</p>
+      <p><strong>5. Cybersecurity interpretation.</strong> With more systems, the absolute aggregate score can become larger and more variable, but its average behavior becomes more predictable. With more attackers, the underlying probabilistic model is unchanged; we simply obtain a clearer estimate of the distribution of possible outcomes.</p>
+      <div class="narrative"><strong>Final message.</strong> Randomness at the microscopic level does not prevent statistical regularity at the macroscopic level. This is exactly what the Law of Large Numbers and the Central Limit Theorem formalize.</div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
