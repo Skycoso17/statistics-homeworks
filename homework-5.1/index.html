@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Homework - Welford's Recurrence Formulas</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="hero">
+  <div class="container">
+    <p class="eyebrow">Statistics Homework</p>
+    <h1>Welford’s Recurrence Formulas</h1>
+    <p class="hero-copy">
+      Understanding how mean and variance can be updated online, one observation at a time.
+    </p>
+  </div>
+</header>
+
+<main class="container">
+
+<section class="card">
+  <span class="section-number">01</span>
+  <h2>Where does the problem come from?</h2>
+  <p>
+    In a traditional statistics exercise we usually receive the complete dataset immediately.
+    If the observations are <strong>4, 7, 13, 16, 5</strong>, we can sum them,
+    divide by the number of observations, and obtain the mean.
+  </p>
+  <p>
+    But real data often arrive gradually: sensor readings, network traffic, server response times,
+    measurements from an experiment, or values produced by a simulation.
+  </p>
+  <div class="flow-box">
+    <span>new observation</span><span>→</span><span>update statistics</span><span>→</span><span>wait for next value</span>
+  </div>
+  <p>
+    Recomputing everything from the beginning after every new observation would work,
+    but it would repeatedly revisit information we have already processed.
+  </p>
+  <div class="narrative">
+    <strong>Goal:</strong> summarize the past with a small amount of information
+    and update that summary whenever a new observation arrives.
+  </div>
+</section>
+
+<section class="card theory-section">
+  <span class="section-number">02</span>
+  <h2>The official recurrence formula for the mean</h2>
+  <p>
+    Suppose we have already processed <span class="math">n − 1</span> observations
+    and their mean is <span class="math">x̄ₙ₋₁</span>.
+    A new observation <span class="math">xₙ</span> arrives.
+  </p>
+
+  <div class="key-box">
+    <p class="formula">x̄ₙ = x̄ₙ₋₁ + (xₙ − x̄ₙ₋₁)/n</p>
+  </div>
+
+  <p>
+    This formula says something very intuitive:
+    start from the old mean and move it toward the new observation.
+  </p>
+
+  <div class="formula-explainer">
+    <div>
+      <strong>x̄ₙ₋₁</strong>
+      <span>the mean before the new observation arrives</span>
+    </div>
+    <div>
+      <strong>xₙ − x̄ₙ₋₁</strong>
+      <span>the distance between the new observation and the old mean</span>
+    </div>
+    <div>
+      <strong>/ n</strong>
+      <span>only a fraction of that distance is used to move the mean</span>
+    </div>
+  </div>
+
+  <p>
+    We usually give the difference a short name:
+  </p>
+
+  <div class="key-box subtle">
+    <p class="formula">δ = xₙ − x̄ₙ₋₁</p>
+  </div>
+
+  <p>
+    Therefore the same recurrence becomes
+    <span class="math">x̄ₙ = x̄ₙ₋₁ + δ/n</span>.
+  </p>
+</section>
+
+<section class="card">
+  <span class="section-number">03</span>
+  <h2>Interactive experiment 1 — watch the running mean evolve</h2>
+
+  <p>
+    Instead of using only three carefully chosen numbers, let us use a longer and less regular dataset:
+  </p>
+
+  <p class="dataset-sequence">
+    12, 7, 15, 9, 18, 11, 6, 14, 10, 17, 8, 13
+  </p>
+
+  <p>
+    The horizontal axis represents the <strong>order in which observations arrive</strong>.
+    The vertical axis represents their numerical value.
+    Every time we process a new observation, the graph adds the new point and updates the running mean.
+  </p>
+
+  <div class="experiment-question">
+    <strong>What should you look for?</strong>
+    A high observation pulls the running mean upward; a low observation pulls it downward.
+    As more observations are processed, each single value has a smaller effect.
+  </div>
+
+  <div class="stream-controls">
+    <button id="meanNextBtn" class="primary">Next observation</button>
+    <button id="meanRunBtn">Run all</button>
+    <button id="meanResetBtn">Reset</button>
+  </div>
+
+  <div class="mean-demo-grid">
+    <div><span>Observations processed</span><strong id="meanSeen">0 / 12</strong></div>
+    <div><span>Old mean</span><strong id="meanOld">–</strong></div>
+    <div><span>New observation</span><strong id="meanIncoming">–</strong></div>
+    <div><span>New mean</span><strong id="meanNew">–</strong></div>
+  </div>
+
+  <div class="axis-chart-card">
+    <svg id="meanExperimentLine" viewBox="0 0 920 330" role="img" aria-label="Observations and running mean"></svg>
+  </div>
+
+  <div id="meanExperimentText" class="insight">
+    Press <strong>Next observation</strong>. The first point creates the first mean; after that,
+    watch how every incoming value moves the running mean.
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">04</span>
+  <h2>Why mean alone is not enough</h2>
+  <p>
+    The mean tells us where the center of a dataset is, but it does not tell us how the values
+    are distributed around that center.
+  </p>
+
+  <div class="dataset-comparison">
+    <div>
+      <span>Dataset A</span>
+      <strong>9, 10, 11</strong>
+      <small>Mean = 10</small>
+    </div>
+    <div>
+      <span>Dataset B</span>
+      <strong>0, 10, 20</strong>
+      <small>Mean = 10</small>
+    </div>
+  </div>
+
+  <p>
+    Both datasets have mean 10, yet Dataset A is tightly concentrated around 10 while Dataset B is widely spread.
+    We therefore need a second quantity that describes <strong>dispersion</strong>.
+  </p>
+
+  <div class="narrative">
+    <strong>Mean asks:</strong> where is the center?<br>
+    <strong>Variance asks:</strong> how far, in general, are the observations from that center?
+  </div>
+</section>
+
+<section class="card theory-section">
+  <span class="section-number">05</span>
+  <h2>The official variance formula, explained slowly</h2>
+
+  <p>
+    For a population, variance is defined as:
+  </p>
+
+  <div class="key-box">
+    <p class="formula">σ² = (1/n) Σᵢ₌₁ⁿ (xᵢ − x̄)²</p>
+  </div>
+
+  <p>
+    This formula is easier to understand if we read it from the inside out.
+  </p>
+
+  <div class="formula-explainer">
+    <div>
+      <strong>xᵢ − x̄</strong>
+      <span>how far one observation is from the mean</span>
+    </div>
+    <div>
+      <strong>(xᵢ − x̄)²</strong>
+      <span>square that distance so negative and positive deviations cannot cancel</span>
+    </div>
+    <div>
+      <strong>Σ</strong>
+      <span>add the squared deviations of all observations</span>
+    </div>
+    <div>
+      <strong>1/n</strong>
+      <span>average those squared deviations</span>
+    </div>
+  </div>
+
+  <h3>Why does a negative sign become positive?</h3>
+  <p>
+    Suppose the mean is 10 and one observation is 7.
+    Its deviation is:
+  </p>
+
+  <div class="sign-demo">
+    <div><span>Deviation</span><strong>7 − 10 = −3</strong></div>
+    <div class="arrow">→ square it →</div>
+    <div><span>Squared deviation</span><strong>(−3)² = 9</strong></div>
+  </div>
+
+  <p>
+    The value is below the mean, so the deviation is negative.
+    But variance is interested in <strong>distance</strong>, not direction.
+    Squaring removes the sign because multiplying two negative numbers gives a positive result:
+  </p>
+
+  <div class="key-box subtle">
+    <p class="formula">(−3)² = (−3)(−3) = +9</p>
+  </div>
+
+  <p>
+    The same happens above the mean. If the observation is 13:
+  </p>
+
+  <div class="sign-demo">
+    <div><span>Deviation</span><strong>13 − 10 = +3</strong></div>
+    <div class="arrow">→ square it →</div>
+    <div><span>Squared deviation</span><strong>(+3)² = 9</strong></div>
+  </div>
+
+  <p>
+    So observations equally far below and above the mean contribute equally to variance.
+    Their direction is different, but their distance from the center is the same.
+  </p>
+</section>
+
+<section class="card">
+  <span class="section-number">06</span>
+  <h2>Interactive experiment 2 — see variance on the axes</h2>
+
+  <p>
+    Now compare two more realistic datasets. They are built around approximately the same center,
+    but one is much more concentrated while the other is much more dispersed.
+  </p>
+
+  <div class="stream-controls">
+    <button id="varianceTight" class="primary">Compact dataset</button>
+    <button id="varianceWide">Dispersed dataset</button>
+    <button id="varianceMixed">Mixed dataset</button>
+  </div>
+
+  <div class="stat-grid four">
+    <div><span>Observations</span><strong id="varDataset">–</strong></div>
+    <div><span>Mean</span><strong id="varMean">–</strong></div>
+    <div><span>Sum of squared deviations</span><strong id="varSS">–</strong></div>
+    <div><span>Population variance</span><strong id="varValue">–</strong></div>
+  </div>
+
+  <div class="axis-chart-card">
+    <svg id="varianceAxisChart" viewBox="0 0 920 330" role="img" aria-label="Dataset values around their mean"></svg>
+  </div>
+
+  <p>
+    The horizontal axis is again the observation number, while the vertical axis shows the value.
+    The horizontal mean line gives us the center. The vertical distance from each point to that line
+    is its deviation from the mean.
+  </p>
+
+  <div class="variance-observation-list" id="varianceObservationList"></div>
+
+  <div class="insight" id="varianceInsight">
+    Select a dataset to compare its points with the mean.
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">07</span>
+  <h2>From variance to Welford</h2>
+
+  <p>
+    The classical variance formula assumes that all observations are available.
+    Welford’s problem is different: values arrive one at a time.
+  </p>
+
+  <p>
+    Welford keeps the accumulated sum of squared deviations in a quantity commonly called
+    <strong>M₂</strong>. It is the running version of the numerator of the variance.
+  </p>
+
+  <div class="key-box">
+    <p class="formula">M₂ = Σ (xᵢ − x̄)²</p>
+  </div>
+
+  <p>
+    Once M₂ is known, the variance is easy:
+  </p>
+
+  <div class="variance-cards">
+    <div>
+      <span>Population variance</span>
+      <strong>σ² = M₂ / n</strong>
+      <small>Use when the observations are the whole population.</small>
+    </div>
+    <div>
+      <span>Sample variance</span>
+      <strong>s² = M₂ / (n − 1)</strong>
+      <small>Use when the observations are a sample from a larger population.</small>
+    </div>
+  </div>
+</section>
+
+<section class="card theory-section">
+  <span class="section-number">08</span>
+  <h2>Welford’s official recurrence formulas</h2>
+
+  <p>
+    When a new observation <span class="math">xₙ</span> arrives,
+    Welford updates the mean and M₂ in three conceptual steps.
+  </p>
+
+  <div class="welford-steps">
+    <div>
+      <span class="step">1</span>
+      <div>
+        <strong>Measure the difference from the old mean</strong>
+        <p class="formula">δ = xₙ − x̄ₙ₋₁</p>
+      </div>
+    </div>
+
+    <div>
+      <span class="step">2</span>
+      <div>
+        <strong>Update the mean</strong>
+        <p class="formula">x̄ₙ = x̄ₙ₋₁ + δ/n</p>
+      </div>
+    </div>
+
+    <div>
+      <span class="step">3</span>
+      <div>
+        <strong>Update the accumulated squared deviation</strong>
+        <p class="formula">M₂,ₙ = M₂,ₙ₋₁ + δ(xₙ − x̄ₙ)</p>
+      </div>
+    </div>
+  </div>
+
+  <p>
+    The third formula may look unusual because it multiplies two differences:
+    one measured from the <strong>old mean</strong> and one measured from the
+    <strong>new mean</strong>.
+  </p>
+
+  <p>
+    This is precisely what corrects the accumulated spread after the center itself has moved.
+    We do not need to revisit every old observation.
+  </p>
+
+  <div class="narrative">
+    The three running quantities are therefore:
+    <strong>n</strong>, <strong>x̄</strong>, and <strong>M₂</strong>.
+    Together they summarize everything needed for mean and variance.
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-heading">
+    <div>
+      <span class="section-number">09</span>
+      <h2>Interactive experiment 3 — Welford step by step</h2>
+    </div>
+    <span id="streamBadge" class="badge">Ready</span>
+  </div>
+
+  <p>
+    Process the sequence one observation at a time and follow all three Welford updates.
+  </p>
+
+  <div class="stream-controls">
+    <input id="dataInput" type="text" value="4, 7, 13, 16, 5" aria-label="Dataset"/>
+    <button id="resetBtn">Reset</button>
+    <button id="nextBtn" class="primary">Next observation</button>
+    <button id="runAllBtn">Run all</button>
+  </div>
+
+  <div class="stat-grid four">
+    <div><span>n</span><strong id="nValue">0</strong></div>
+    <div><span>Current x</span><strong id="xValue">–</strong></div>
+    <div><span>Running mean</span><strong id="meanValue">0</strong></div>
+    <div><span>M₂</span><strong id="m2Value">0</strong></div>
+  </div>
+
+  <div class="number-line-card">
+    <svg id="numberLine" viewBox="0 0 900 160"></svg>
+  </div>
+
+  <div class="calculation-panel">
+    <div><span>δ = x − old mean</span><strong id="deltaValue">–</strong></div>
+    <div><span>new mean</span><strong id="meanUpdateValue">–</strong></div>
+    <div><span>M₂ increment</span><strong id="m2IncrementValue">–</strong></div>
+  </div>
+
+  <div class="insight" id="streamInsight">
+    Press <strong>Next observation</strong> to process the first value.
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">10</span>
+  <h2>Numerical verification</h2>
+  <p>
+    Finally, compare Welford’s online result with the ordinary direct calculation.
+  </p>
+
+  <div class="analysis-table-wrap">
+    <table class="analysis-table">
+      <thead>
+        <tr>
+          <th>Quantity</th>
+          <th>Direct calculation</th>
+          <th>Welford</th>
+          <th>Absolute difference</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Mean</td><td id="directMean">–</td><td id="welfordMean">–</td><td id="meanDiff">–</td></tr>
+        <tr><td>Population variance</td><td id="directPopVar">–</td><td id="welfordPopVar">–</td><td id="popVarDiff">–</td></tr>
+        <tr><td>Sample variance</td><td id="directSampleVar">–</td><td id="welfordSampleVar">–</td><td id="sampleVarDiff">–</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="insight" id="verificationInsight">Process the stream to compare the two methods.</div>
+</section>
+
+<section class="card conclusion">
+  <span class="section-number">11</span>
+  <h2>What should we remember?</h2>
+  <div class="summary-list">
+    <div><strong>The mean describes the center.</strong><span>New observations move that center gradually.</span></div>
+    <div><strong>Variance describes the spread.</strong><span>It measures squared distance from the mean.</span></div>
+    <div><strong>Squaring removes direction.</strong><span>Negative and positive deviations become positive contributions.</span></div>
+    <div><strong>Welford makes the process online.</strong><span>Only n, mean and M₂ need to be maintained.</span></div>
+  </div>
+</section>
+
+</main>
+<script src="app.js"></script>
+</body>
+</html>
