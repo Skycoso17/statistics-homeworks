@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Homework 6.2 - Numerical Computation of the Normal CDF</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="hero">
+  <div class="container">
+    <p class="eyebrow">Statistics Homework · 6.2</p>
+    <h1>Numerical Computation of the Normal CDF</h1>
+    <p class="hero-copy">
+      Why a simple bell curve leads to a non-elementary integral,
+      and how numerical methods turn that integral into useful probabilities.
+    </p>
+  </div>
+</header>
+
+<main class="container">
+
+<section class="card">
+  <span class="section-number">01</span>
+  <h2>Starting from the meaning, not from the formula</h2>
+
+  <p class="lead">
+    The goal of this homework is to compute the cumulative distribution function
+    of the <strong>standard normal distribution</strong>.
+  </p>
+
+  <p>
+    Before thinking about algorithms, we need to understand what the CDF means.
+    The normal density is the familiar bell-shaped curve.
+    The total area under that curve is 1, because the whole curve represents
+    all possible probability.
+  </p>
+
+  <div class="compare-grid">
+    <article class="idea-card blue">
+      <h3>Density φ(x)</h3>
+      <p class="quote">“How concentrated is probability around x?”</p>
+      <p>
+        The density describes the shape of the bell curve.
+        A higher curve means that values around that point are more concentrated.
+      </p>
+    </article>
+
+    <article class="idea-card green">
+      <h3>CDF Φ(z)</h3>
+      <p class="quote">“How much probability has accumulated before z?”</p>
+      <p>
+        The CDF is the entire area under the curve to the left of z.
+      </p>
+    </article>
+  </div>
+
+  <p class="formula">φ(x) = (1 / √(2π)) e<sup>−x²/2</sup></p>
+  <p class="formula">Φ(z) = P(Z ≤ z) = ∫<sub>−∞</sub><sup>z</sup> φ(x) dx</p>
+
+  <div class="key-message">
+    <strong>The main idea:</strong>
+    computing Φ(z) is an area problem. The difficulty is that this particular area
+    cannot be obtained from an ordinary elementary antiderivative.
+  </div>
+
+  <div class="concept-card">
+    <h3>Why is the CDF an area and not simply the height of the curve?</h3>
+    <p>
+      For a continuous random variable, the probability of obtaining one exact value is zero.
+      The height of the density at a point therefore does <strong>not</strong> represent the probability of that exact point.
+      Probability comes from an interval, and intervals correspond to areas under the density curve.
+    </p>
+    <p>
+      This is why the CDF accumulates area from the far left up to z:
+      it converts the shape of the density into an actual probability.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">02</span>
+  <h2>Why is the normal density a probability distribution?</h2>
+
+  <p>
+    A probability density must be non-negative and its total area must be 1.
+    The Gaussian function is always positive, and the normalization constant
+    <span class="math">1/√(2π)</span> is chosen precisely so that the full area becomes 1.
+  </p>
+
+  <p class="formula">∫<sub>−∞</sub><sup>∞</sup> (1/√(2π))e<sup>−x²/2</sup> dx = 1</p>
+
+  <p>
+    The notes supplied with the assignment derive this Gaussian integral using
+    a two-dimensional integral and polar coordinates.
+    The important conceptual point for this homework is simpler:
+    <strong>the bell curve has been scaled so that its complete area is exactly one probability unit.</strong>
+  </p>
+
+  <canvas id="meaningCanvas" width="1000" height="360" class="plot"></canvas>
+</section>
+
+<section class="card">
+  <span class="section-number">03</span>
+  <h2>What changes when we move z?</h2>
+
+  <p>
+    Imagine moving a vertical line from the far left of the bell curve to the far right.
+    The area accumulated on the left can only increase.
+  </p>
+
+  <div class="logic-box">
+    <div class="steps">
+      <span>z very negative</span><span>→</span>
+      <span>almost no area collected</span><span>→</span>
+      <span>z = 0 gives half the curve</span><span>→</span>
+      <span>z very positive gives almost all the area</span>
+    </div>
+  </div>
+
+  <p>
+    Because the standard normal curve is symmetric around zero:
+  </p>
+
+  <p class="formula">Φ(0)=0.5 &nbsp;&nbsp;&nbsp; and &nbsp;&nbsp;&nbsp; Φ(−z)=1−Φ(z)</p>
+
+  <div class="mini-conclusion">
+    <strong>Why symmetry matters numerically:</strong>
+    we do not need to integrate from negative infinity every time.
+    We can compute the area between 0 and |z| and then add or subtract it from 0.5.
+  </div>
+
+  <div class="concept-card">
+    <h3>What information does Φ(z) give us?</h3>
+    <p>
+      A single CDF value summarizes everything to the left of z.
+      For example, if Φ(1)=0.8413, this means that about 84.13% of the standard normal distribution
+      lies below z=1.
+    </p>
+    <p>
+      So the CDF is not merely another curve: it is a direct probability calculator.
+      This is why it is used for percentiles, hypothesis tests, confidence intervals and p-values.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">04</span>
+  <h2>The real mathematical obstacle</h2>
+
+  <p>
+    At first sight, the problem seems like an ordinary calculus exercise:
+    integrate <span class="math">e<sup>−x²/2</sup></span>.
+    But no substitution, integration by parts, logarithm or trigonometric identity
+    produces an elementary antiderivative.
+  </p>
+
+  <p>
+    This is not just a historical failure to find the right trick.
+    A classical result associated with <strong>Liouville's theorem on elementary antiderivatives</strong>
+    tells us that the antiderivative of the Gaussian cannot be expressed as a finite
+    combination of elementary functions.
+  </p>
+
+  <div class="concept-card">
+    <h3>What does “not elementary” mean?</h3>
+    <p>
+      It means we cannot write the answer using only a finite combination of familiar
+      objects such as polynomials, exponentials, logarithms, trigonometric functions,
+      inverse trigonometric functions and algebraic operations.
+    </p>
+    <p>
+      The integral still exists. We simply need a larger mathematical vocabulary.
+    </p>
+  </div>
+
+  <details>
+    <summary>A little more mathematics: what is Liouville telling us?</summary>
+    <p>
+      Liouville's theory gives a structural test for when an elementary function can have
+      an elementary antiderivative. The Gaussian exponential fails that test.
+      Therefore an expression built only from ordinary elementary functions cannot represent
+      its indefinite integral.
+    </p>
+    <p>
+      For this homework, the important conclusion is not the technical proof:
+      it is that <strong>numerical computation is necessary for a structural mathematical reason</strong>,
+      not because the Gaussian is poorly understood.
+    </p>
+  </details>
+
+  <div class="key-message">
+    <strong>Logic:</strong>
+    the integral exists → no elementary antiderivative exists → we introduce a special function
+    and numerical algorithms.
+  </div>
+
+  <div class="concept-card">
+    <h3>Why is this important for numerical computation?</h3>
+    <p>
+      If an elementary antiderivative existed, we could evaluate Φ(z) simply by substituting the endpoints into a closed formula.
+      Because it does not exist, every practical computation must somehow approximate the required area or approximate a special function that represents it.
+    </p>
+    <p>
+      In other words, numerical computation is not an optional shortcut here:
+      it is part of the normal workflow for evaluating the CDF.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">05</span>
+  <h2>Why introduce the error function?</h2>
+
+  <p>
+    If an integral appears constantly in mathematics, science and statistics,
+    it is useful to give that integral its own name.
+    That is exactly what happens with the <strong>error function</strong>.
+  </p>
+
+  <p class="formula">erf(x) = (2/√π) ∫<sub>0</sub><sup>x</sup> e<sup>−t²</sup> dt</p>
+
+  <p>
+    After a simple change of variables, the normal CDF can be written exactly as:
+  </p>
+
+  <p class="formula">Φ(z) = ½ [1 + erf(z/√2)]</p>
+
+  <p>
+    This is an <strong>exact analytical representation</strong>.
+    But erf is itself a special function defined from the same kind of non-elementary integral.
+  </p>
+
+  <div class="mini-conclusion">
+    <strong>Special functions solve the representation problem.</strong><br>
+    <strong>Numerical methods solve the evaluation problem.</strong>
+  </div>
+
+  <div class="concept-card">
+    <h3>Why introduce a new function instead of just keeping the integral?</h3>
+    <p>
+      Naming the recurring integral gives us a reusable mathematical object.
+      Once erf is defined, many formulas in probability, diffusion, heat flow and statistics become shorter and easier to manipulate.
+    </p>
+    <p>
+      The important point is that “exact analytical representation” and “easy numerical evaluation” are different goals.
+      erf solves the first one; algorithms solve the second.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">06</span>
+  <h2>Where do the benchmark numbers come from?</h2>
+
+  <p>
+    This homework does <strong>not</strong> use a randomly generated dataset.
+    We select several meaningful z-values across the center and tails of the normal distribution
+    and attach a benchmark CDF value to each one.
+    These benchmark values come from a standard normal table and are stored locally in
+    <code>reference-data.csv</code>.
+  </p>
+
+  <p>
+    The NIST table reports the area between 0 and |z|, not Φ(z) directly.
+    Therefore we reconstruct the CDF using symmetry:
+  </p>
+
+  <p class="formula">
+    z ≥ 0: Φ(z)=0.5+A(z) &nbsp;&nbsp;&nbsp;&nbsp;
+    z &lt; 0: Φ(z)=0.5−A(|z|)
+  </p>
+
+  <div class="example-box">
+    <h3>Example: z = 1.53</h3>
+    <p>NIST reports the area from 0 to 1.53 as <strong>0.43699</strong>.</p>
+    <p class="formula">Φ(1.53)=0.5+0.43699=0.93699</p>
+  </div>
+
+  <p>
+    The file <code>reference-data.csv</code> contains the benchmark values used by the experiment.
+    Keeping them in a separate file makes the comparison reproducible and makes it clear
+    that the algorithms are being tested against fixed external target values rather than against each other.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>z</th><th>Area 0 → |z|</th><th>Benchmark Φ(z)</th></tr>
+    </thead>
+    <tbody id="sourceTableBody"></tbody>
+  </table>
+
+  <div class="concept-card">
+    <h3>Why do we need benchmark values at all?</h3>
+    <p>
+      If three algorithms produce similar numbers, that does not automatically prove that they are correct.
+      They could all share the same mistake.
+    </p>
+    <p>
+      A trusted benchmark gives us an independent target.
+      Accuracy is then measured by the distance between our computed value and that target.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">07</span>
+  <h2>Three ways to compute the same CDF</h2>
+
+  <p>
+    We now deliberately solve the same problem in three different ways.
+    The goal is not only to obtain the right number,
+    but to understand the trade-off between mathematical simplicity,
+    numerical accuracy and computational cost.
+  </p>
+
+  <div class="story-grid">
+    <article>
+      <h3>1 · Simpson's rule</h3>
+      <p>
+        Compute the probability area directly.
+        We divide the interval between 0 and |z| into small pieces and approximate the curve locally.
+      </p>
+    </article>
+
+    <article>
+      <h3>2 · Power series</h3>
+      <p>
+        Replace erf by an infinite series and keep adding terms until the new contribution is tiny.
+      </p>
+    </article>
+
+    <article>
+      <h3>3 · erf approximation</h3>
+      <p>
+        Use a compact approximation designed specifically for erf
+        (Abramowitz–Stegun 7.1.26).
+      </p>
+    </article>
+  </div>
+
+  <div class="concept-card">
+    <h3>Why compare different methods if they all approximate the same value?</h3>
+    <p>
+      Numerical methods are judged by more than correctness.
+      We also care about how quickly the error decreases, how much computation is required,
+      and whether the method behaves well in different regions of the input.
+    </p>
+    <p>
+      That is why this homework compares <strong>accuracy</strong>,
+      <strong>convergence</strong> and <strong>efficiency</strong> separately.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">08</span>
+  <h2>Method 1 · Simpson's rule</h2>
+
+  <p>
+    Numerical integration is the most direct translation of the definition of Φ.
+    We approximate the area instead of searching for an antiderivative.
+  </p>
+
+  <p>
+    Using symmetry, we only need:
+  </p>
+
+  <p class="formula">A(z)=∫<sub>0</sub><sup>|z|</sup> φ(x) dx</p>
+
+  <p>
+    Simpson's rule approximates two adjacent pieces of the curve using a parabola.
+    Because the normal density is very smooth, this works extremely well.
+  </p>
+
+  <p class="formula">
+    ∫ f(x)dx ≈ (h/3)[f(x₀)+4f(x₁)+2f(x₂)+⋯+4f(xₙ₋₁)+f(xₙ)]
+  </p>
+
+  <div class="mini-conclusion">
+    <strong>Concept:</strong> we do not need an antiderivative if we can approximate the area accurately enough.
+  </div>
+
+  <div class="concept-card">
+    <h3>What controls the accuracy?</h3>
+    <p>
+      The number of subintervals N controls how finely we follow the bell curve.
+      A larger N means smaller pieces and usually a smaller integration error,
+      but also more evaluations of the density.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">09</span>
+  <h2>Method 2 · Power series</h2>
+
+  <p>
+    Instead of approximating the area geometrically,
+    we can approximate the special function algebraically.
+  </p>
+
+  <p class="formula">
+    erf(x) = (2/√π) Σ [ (−1)<sup>n</sup>x<sup>2n+1</sup> / (n!(2n+1)) ]
+  </p>
+
+  <p>
+    This is an infinite series.
+    A computer evaluates only finitely many terms and stops when the next term
+    is smaller than a chosen tolerance.
+  </p>
+
+  <div class="story-grid">
+    <article>
+      <h3>Near zero</h3>
+      <p>Terms become small quickly. The method is efficient.</p>
+    </article>
+    <article>
+      <h3>For larger |z|</h3>
+      <p>More terms are required before the additions become negligible.</p>
+    </article>
+    <article>
+      <h3>Numerical lesson</h3>
+      <p>A mathematically convergent series is not equally efficient at every input value.</p>
+    </article>
+  </div>
+
+  <div class="concept-card">
+    <h3>What does “convergent series” mean in practice?</h3>
+    <p>
+      It means that if we keep adding more terms, the partial sum approaches the exact value.
+      But the rate of approach matters computationally:
+      a slowly converging series may be mathematically correct and still be a poor algorithm.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">10</span>
+  <h2>Method 3 · A practical erf approximation</h2>
+
+  <p>
+    If we need Φ millions of times, repeatedly integrating a curve is wasteful.
+    A more practical approach is to approximate erf directly.
+  </p>
+
+  <p>
+    This prototype uses the classic Abramowitz–Stegun formula 7.1.26,
+    a short expression involving an exponential and a fifth-degree polynomial-like term.
+    Its published maximum absolute error for erf is about
+    <strong>1.5 × 10<sup>−7</sup></strong>.
+  </p>
+
+  <div class="key-message">
+    <strong>Concept:</strong>
+    specialized approximations use knowledge about the function's shape
+    to get a good answer with a fixed, small number of operations.
+  </div>
+
+  <div class="concept-card">
+    <h3>Why can this be faster than direct integration?</h3>
+    <p>
+      Simpson's rule evaluates the normal density many times for each new z.
+      A compact erf approximation instead performs a short, fixed sequence of arithmetic operations.
+      That fixed cost becomes very important when the CDF is evaluated repeatedly.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">11</span>
+  <h2>Interactive experiment</h2>
+
+  <p>
+    Move z. The shaded part of the bell curve is the probability Φ(z).
+    The three algorithms are evaluated immediately.
+  </p>
+
+  <div class="controls">
+    <label>z value
+      <div class="range-row">
+        <input id="zSlider" type="range" min="-3.5" max="3.5" step="0.01" value="1">
+        <span id="zLabel" class="control-value">1.00</span>
+      </div>
+    </label>
+  </div>
+
+  <div class="stat-grid three">
+    <div><span>Simpson</span><strong id="simpsonLive">–</strong></div>
+    <div><span>Power series</span><strong id="seriesLive">–</strong></div>
+    <div><span>erf approximation</span><strong id="erfLive">–</strong></div>
+  </div>
+
+  <canvas id="interactiveCanvas" width="1000" height="390" class="plot"></canvas>
+
+  <div id="interactiveText" class="explanation"></div>
+</section>
+
+<section class="card">
+  <span class="section-number">12</span>
+  <h2>Experiment with the NIST reference dataset</h2>
+
+  <p>
+    Here the algorithms are tested only at points for which we have an explicit
+    external NIST reference.
+  </p>
+
+  <table class="wide">
+    <thead>
+      <tr>
+        <th>z</th>
+        <th>NIST Φ(z)</th>
+        <th>Simpson</th>
+        <th>|error|</th>
+        <th>Series</th>
+        <th>|error|</th>
+        <th>erf approx.</th>
+        <th>|error|</th>
+      </tr>
+    </thead>
+    <tbody id="experimentBody"></tbody>
+  </table>
+
+  <div class="mini-conclusion">
+    <strong>Important:</strong>
+    the benchmark column is the external target.
+    The other columns are produced by our own JavaScript implementation.
+  </div>
+
+  <div class="concept-card">
+    <h3>How should we read this table?</h3>
+    <p>
+      The important quantity is not just the approximation itself but the absolute error:
+      how far our result is from the benchmark.
+      Two methods can display the same five decimal digits and still have different deeper numerical accuracy.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">13</span>
+  <h2>How does accuracy change?</h2>
+
+  <p>
+    The next graph shows the absolute error of each method at the NIST reference points.
+    A lower point means a more accurate numerical result.
+  </p>
+
+  <canvas id="errorCanvas" width="1000" height="390" class="plot"></canvas>
+
+  <div class="explanation">
+    Simpson's rule becomes more accurate when we increase the number of subintervals.
+    The series becomes more accurate when we include more terms.
+    The erf approximation instead has a nearly fixed computational cost.
+    This is the central accuracy-versus-efficiency trade-off.
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">14</span>
+  <h2>Convergence experiment</h2>
+
+  <p>
+    To make convergence visible, fix z=1.53 and progressively increase
+    the numerical effort.
+  </p>
+
+  <div class="two-columns">
+    <div>
+      <h3>Simpson: increase N</h3>
+      <table>
+        <thead><tr><th>N</th><th>Φ(1.53)</th><th>Error vs NIST</th></tr></thead>
+        <tbody id="simpsonConvergence"></tbody>
+      </table>
+    </div>
+
+    <div>
+      <h3>Series: increase maximum terms</h3>
+      <table>
+        <thead><tr><th>Terms</th><th>Φ(1.53)</th><th>Error vs NIST</th></tr></thead>
+        <tbody id="seriesConvergence"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="mini-conclusion">
+    <strong>Convergence means:</strong>
+    as we spend more numerical work, the approximation stabilizes near the trusted value.
+  </div>
+
+  <div class="concept-card">
+    <h3>Why do we care about convergence and not only one good result?</h3>
+    <p>
+      A single accurate-looking answer could be accidental.
+      Convergence shows a systematic pattern:
+      when resolution or number of terms increases, the method moves toward a stable target.
+      That behavior gives us confidence that the algorithm is mathematically reliable.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">15</span>
+  <h2>Efficiency experiment</h2>
+
+  <p>
+    Accuracy alone is not enough.
+    In statistics, optimization or simulation, Φ may be evaluated thousands or millions of times.
+  </p>
+
+  <button id="runBenchmark">Run browser benchmark</button>
+
+  <div class="stat-grid three">
+    <div><span>Simpson</span><strong id="benchSimpson">–</strong></div>
+    <div><span>Series</span><strong id="benchSeries">–</strong></div>
+    <div><span>erf approximation</span><strong id="benchErf">–</strong></div>
+  </div>
+
+  <div id="benchmarkText" class="explanation">
+    The exact timing depends on the device and browser.
+    What matters is the relative cost of the three algorithms on the same machine.
+  </div>
+
+  <div class="concept-card">
+    <h3>What does “efficient” mean here?</h3>
+    <p>
+      Efficiency means obtaining sufficient accuracy with as little computation as possible.
+      A method that is extremely accurate but one hundred times slower may be unnecessary
+      if another method already reaches the precision required by the application.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">16</span>
+  <h2>Why numerical methods are still necessary after introducing erf</h2>
+
+  <div class="story-grid">
+    <article>
+      <h3>The integral</h3>
+      <p>Defines exactly what probability we want.</p>
+    </article>
+    <article>
+      <h3>The special function</h3>
+      <p>Gives that non-elementary integral an exact mathematical representation.</p>
+    </article>
+    <article>
+      <h3>The numerical algorithm</h3>
+      <p>Produces the decimal number that software can actually use.</p>
+    </article>
+  </div>
+
+  <div class="key-message">
+    <strong>Integral → special function → numerical value.</strong><br>
+    These are three different layers of the same problem.
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">17</span>
+  <h2>Final comparison</h2>
+
+  <table>
+    <thead>
+      <tr><th>Method</th><th>Logic</th><th>Strength</th><th>Weakness</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Simpson</td>
+        <td>Approximate the area directly</td>
+        <td>General, intuitive, controllable accuracy</td>
+        <td>Many function evaluations</td>
+      </tr>
+      <tr>
+        <td>Power series</td>
+        <td>Approximate erf term by term</td>
+        <td>Simple mathematics, excellent near the center</td>
+        <td>More terms for larger arguments</td>
+      </tr>
+      <tr>
+        <td>A&amp;S erf approximation</td>
+        <td>Use a formula optimized for erf</td>
+        <td>Fast, fixed cost, good accuracy</td>
+        <td>It is an approximation, not an elementary exact formula</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <span class="section-number">18</span>
+  <h2>Final conclusion</h2>
+
+  <p>
+    The normal CDF looks like a simple area under a familiar curve,
+    but it reveals an important distinction between analytical mathematics
+    and numerical computation.
+  </p>
+
+  <p>
+    Liouville's result explains why we cannot simplify the Gaussian integral
+    into elementary functions.
+    The error function gives us an exact special-function representation.
+    Numerical methods then give us practical values.
+  </p>
+
+  <div class="key-message">
+    <strong>The final lesson:</strong><br>
+    we know exactly what Φ means mathematically;<br>
+    we know why elementary calculus cannot express it;<br>
+    and we can still compute it to very high accuracy.
+  </div>
+</section>
+
+
+<p class="footer-note">Homework 6.2 · Numerical Computation of the Normal CDF</p>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>

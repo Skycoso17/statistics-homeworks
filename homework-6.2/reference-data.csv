@@ -1,0 +1,10 @@
+z,nist_area_0_to_abs_z,nist_cdf,derivation,source
+-3.00,0.49865,0.00135,"0.5 - 0.49865","NIST Standard Normal CDF Table"
+-2.00,0.47725,0.02275,"0.5 - 0.47725","NIST Standard Normal CDF Table"
+-1.00,0.34134,0.15866,"0.5 - 0.34134","NIST Standard Normal CDF Table"
+0.00,0.00000,0.50000,"symmetry","NIST Standard Normal CDF Table"
+0.50,0.19146,0.69146,"0.5 + 0.19146","NIST Standard Normal CDF Table"
+1.00,0.34134,0.84134,"0.5 + 0.34134","NIST Standard Normal CDF Table"
+1.53,0.43699,0.93699,"0.5 + 0.43699","NIST Standard Normal CDF Table"
+2.00,0.47725,0.97725,"0.5 + 0.47725","NIST Standard Normal CDF Table"
+3.00,0.49865,0.99865,"0.5 + 0.49865","NIST Standard Normal CDF Table"
