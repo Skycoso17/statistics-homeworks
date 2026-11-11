@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Homework 6 - Riemann and Lebesgue Integration</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<header class="hero">
+  <div class="container">
+    <p class="eyebrow">Statistics Homework · 6</p>
+    <h1>Riemann and Lebesgue Integration</h1>
+    <p class="hero-copy">Same integral, different way of looking at the function.</p>
+  </div>
+</header>
+
+<main class="container">
+<section class="card">
+  <span class="section-number">01</span>
+  <h2>The main idea</h2>
+  <p class="lead">Both Riemann and Lebesgue integration try to answer the same question: <strong>how much does a function contribute in total?</strong></p>
+  <p>The difference is not mainly in the final number. The difference is in <strong>how we organize the information</strong>.</p>
+
+  <div class="compare-grid">
+    <div class="idea-card blue">
+      <h3>Riemann asks:</h3>
+      <p class="quote">“Where are the points?”</p>
+      <p>We divide the x-axis into small pieces. In each piece, we look at the height of the function.</p>
+    </div>
+    <div class="idea-card green">
+      <h3>Lebesgue asks:</h3>
+      <p class="quote">“What values do the points have?”</p>
+      <p>We group together points that give similar function values, even if those points are far apart on the x-axis.</p>
+    </div>
+  </div>
+
+  <div class="key-message"><strong>The core difference:</strong> Riemann cuts the <em>domain</em>. Lebesgue groups the <em>values</em>.</div>
+</section>
+
+<section class="card">
+  <span class="section-number">02</span>
+  <h2>How Riemann thinks</h2>
+  <p>Imagine that we want to estimate the area under a curve. The most natural idea is to divide the horizontal axis into many small intervals.</p>
+  <p>In every interval, we build a rectangle. If the intervals are small enough, the rectangles should approximate the curve.</p>
+  <p class="formula">∫ f(x) dx ≈ Σ f(xᵢ*) Δx</p>
+  <p>The formula looks technical, but the logic is simple: <strong>small width × approximate height</strong>, repeated many times.</p>
+  <div class="logic-box">
+    <strong>Riemann logic</strong>
+    <div class="steps">
+      <span>divide x-axis</span><span>→</span><span>look at function height</span><span>→</span><span>build rectangles</span><span>→</span><span>add areas</span>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">03</span>
+  <h2>How Lebesgue thinks</h2>
+  <p>Lebesgue changes the question. Instead of asking what happens in a small interval of x, we look at the possible function values.</p>
+  <p>For example, suppose many different x-values produce a value near 2. Lebesgue groups all of them together and asks: <strong>how much of the domain produces values near 2?</strong></p>
+  <p class="formula">∫ f dμ ≈ Σ value × size of its preimage</p>
+  <p>Again, the formula is less important than the idea: <strong>function value × how much space it occupies</strong>.</p>
+  <div class="logic-box green-box">
+    <strong>Lebesgue logic</strong>
+    <div class="steps">
+      <span>group by function value</span><span>→</span><span>measure how much x-space belongs to each group</span><span>→</span><span>multiply</span><span>→</span><span>add contributions</span>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <span class="section-number">04</span>
+  <h2>A simple way to compare them</h2>
+  <table>
+    <thead><tr><th>Question</th><th>Riemann</th><th>Lebesgue</th></tr></thead>
+    <tbody>
+      <tr><td>What do we divide?</td><td>The domain</td><td>The function values</td></tr>
+      <tr><td>How do we think?</td><td>Vertical slices</td><td>Horizontal groups</td></tr>
+      <tr><td>What matters?</td><td>Local behavior in x</td><td>How much space each value occupies</td></tr>
+      <tr><td>Best intuition</td><td>Rectangles under a curve</td><td>Group equal or similar heights</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <span class="section-number">05</span>
+  <h2>Interactive laboratory</h2>
+  <p>Now we use the same functions and observe how the two viewpoints behave numerically.</p>
+
+  <div class="controls">
+    <label>Function
+      <select id="functionSelect">
+        <option value="sin">sin(x)</option>
+        <option value="square">x²</option>
+        <option value="step">step function 1 / 3</option>
+        <option value="abs">|x−0.5|</option>
+        <option value="invroot">1/√x</option>
+        <option value="indicator">indicator function</option>
+        <option value="sinc">sin(x)/x</option>
+      </select>
+    </label>
+
+    <label>Riemann subintervals N
+      <div class="range-row"><input id="nRange" type="range" min="4" max="200" step="2" value="30"><span id="nValue" class="control-value">30</span></div>
+    </label>
+
+    <label>Lebesgue bands K
+      <div class="range-row"><input id="kRange" type="range" min="4" max="100" step="2" value="24"><span id="kValue" class="control-value">24</span></div>
+    </label>
+  </div>
+
+  <div class="stat-grid">
+    <div><span>Exact / reference</span><strong id="exactValue">–</strong></div>
+    <div><span>Riemann</span><strong id="riemannValue">–</strong></div>
+    <div><span>Lebesgue-inspired</span><strong id="lebesgueValue">–</strong></div>
+    <div><span>Riemann error</span><strong id="riemannError">–</strong></div>
+    <div><span>Lebesgue error</span><strong id="lebesgueError">–</strong></div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card"><h3>Riemann: vertical view</h3><canvas id="riemannChart"></canvas></div>
+    <div class="chart-card"><h3>Lebesgue-inspired: value groups</h3><canvas id="lebesgueChart"></canvas></div>
+  </div>
+
+  <div class="explanation" id="labExplanation"></div>
+</section>
+
+<section class="card">
+  <span class="section-number">06</span>
+  <h2>Experiment 1 · sin(x)</h2>
+  <div class="story-grid">
+    <div><h3>What is happening?</h3><p>The sine function is smooth and regular. Nothing strange happens: the curve changes gradually and has no jumps.</p></div>
+    <div><h3>How does Riemann see it?</h3><p>Small vertical slices work very well because nearby points have similar heights.</p></div>
+    <div><h3>How does Lebesgue see it?</h3><p>Points with similar heights are grouped together. The groups change smoothly because the function itself is smooth.</p></div>
+  </div>
+  <p class="formula">∫₀^π sin(x) dx = 2</p>
+  <div class="mini-conclusion"><strong>Lesson:</strong> for a smooth function, both viewpoints are natural and converge to the same answer.</div>
+</section>
+
+<section class="card">
+  <span class="section-number">07</span>
+  <h2>Experiment 2 · x²</h2>
+  <div class="story-grid">
+    <div><h3>What is happening?</h3><p>The function grows steadily from 0 to 1. It is continuous and monotone.</p></div>
+    <div><h3>Riemann view</h3><p>The rectangles gradually increase in height as x increases.</p></div>
+    <div><h3>Lebesgue view</h3><p>Low values occupy more of the left part of the domain, while higher values appear closer to x=1.</p></div>
+  </div>
+  <p class="formula">∫₀¹ x² dx = 1/3</p>
+  <div class="mini-conclusion"><strong>Lesson:</strong> this is a clean example for studying numerical error, because the function itself introduces no difficulty.</div>
+</section>
+
+<section class="card">
+  <span class="section-number">08</span>
+  <h2>Experiment 3 · Step function</h2>
+  <p class="formula">f(x)=1 for x&lt;0.5, &nbsp;&nbsp; f(x)=3 for x≥0.5</p>
+  <div class="story-grid">
+    <div><h3>What is happening?</h3><p>The function only takes two values. Half of the interval is at height 1 and the other half is at height 3.</p></div>
+    <div><h3>Riemann view</h3><p>We split the x-axis and determine whether each small interval lies in the lower or upper region.</p></div>
+    <div><h3>Lebesgue view</h3><p>We immediately see two groups: value 1 occupies half the domain, and value 3 occupies the other half.</p></div>
+  </div>
+  <p class="formula">1·0.5 + 3·0.5 = 2</p>
+  <div class="mini-conclusion"><strong>Lesson:</strong> when a function takes only a few values, the Lebesgue viewpoint can be more natural than dividing the domain.</div>
+</section>
+
+<section class="card">
+  <span class="section-number">09</span>
+  <h2>Experiment 4 · |x−0.5|</h2>
+  <div class="story-grid">
+    <div><h3>What is happening?</h3><p>The function is symmetric. The same height can appear on both sides of the center.</p></div>
+    <div><h3>Riemann view</h3><p>The left and right sides are treated as different locations in the domain.</p></div>
+    <div><h3>Lebesgue view</h3><p>Equal heights are grouped together, even if they come from two separate x-regions.</p></div>
+  </div>
+  <p class="formula">∫₀¹ |x−0.5| dx = 1/4</p>
+  <div class="mini-conclusion"><strong>Lesson:</strong> Lebesgue does not care whether points are close together. It cares about the value they produce.</div>
+</section>
+
+<section class="card">
+  <span class="section-number">10</span>
+  <h2>Experiment 5 · 1/√x</h2>
+  <div class="story-grid">
+    <div><h3>What is happening?</h3><p>Near x=0 the function becomes extremely large. But this happens in a very small region.</p></div>
+    <div><h3>Riemann view</h3><p>The first intervals near zero become difficult, because the rectangle heights grow rapidly.</p></div>
+    <div><h3>Lebesgue view</h3><p>Very large function values occupy only a tiny part of the domain, so their total contribution can still be finite.</p></div>
+  </div>
+  <p class="formula">∫₀¹ 1/√x dx = 2</p>
+  <div class="mini-conclusion"><strong>Lesson:</strong> a function can become extremely large without having an infinite integral. What matters is both the height and how much space that height occupies.</div>
+</section>
+
+<section class="card">
+  <span class="section-number">11</span>
+  <h2>Experiment 6 · Indicator function</h2>
+  <p class="formula">f(x)=1 for x&lt;0.5, &nbsp;&nbsp; f(x)=0 otherwise</p>
+  <div class="story-grid">
+    <div><h3>What is happening?</h3><p>The function is simply marking a set: it is 1 inside the set and 0 outside.</p></div>
+    <div><h3>Riemann view</h3><p>We approximate the area of the region where the function is equal to 1.</p></div>
+    <div><h3>Lebesgue view</h3><p>The integral is directly the size of the set on which the function equals 1.</p></div>
+  </div>
+  <p class="formula">∫ f = measure of [0,0.5) = 0.5</p>
+  <div class="mini-conclusion"><strong>Lesson:</strong> indicator functions show very clearly how integration and measure are connected.</div>
+</section>
+
+<section class="card">
+  <span class="section-number">12</span>
+  <h2>Experiment 7 · sin(x)/x</h2>
+  <div class="story-grid">
+    <div><h3>What is happening?</h3><p>The formula is undefined at x=0, but the function approaches 1 there.</p></div>
+    <div><h3>Riemann view</h3><p>Once we define f(0)=1, the function behaves like an ordinary continuous function.</p></div>
+    <div><h3>Lebesgue view</h3><p>A change at a single point does not matter for the integral, because one point has measure zero.</p></div>
+  </div>
+  <p class="formula">∫₀^π sin(x)/x dx ≈ 1.851937</p>
+  <div class="mini-conclusion"><strong>Lesson:</strong> isolated points usually do not matter for integration, while the global behavior of the function does.</div>
+</section>
+
+<section class="card">
+  <span class="section-number">13</span>
+  <h2>Experiment 8 · Dirichlet function</h2>
+  <p class="formula">D(x)=1 for rational x, 0 for irrational x</p>
+  <div class="story-grid">
+    <div><h3>What is happening?</h3><p>Rational and irrational numbers are mixed everywhere. No matter how much we zoom in, we always find both types of points.</p></div>
+    <div><h3>Riemann view</h3><p>Every tiny interval contains values 0 and 1. So Riemann never finds a stable local height.</p></div>
+    <div><h3>Lebesgue view</h3><p>Lebesgue asks how much space belongs to the value 1. The rationals have measure zero, so almost all the interval contributes value 0.</p></div>
+  </div>
+  <div class="dirichlet-visual"><div>Lower sums stay at <strong>0</strong></div><div>Upper sums stay at <strong>1</strong></div></div>
+  <p class="formula">Lebesgue integral = 0</p>
+  <div class="mini-conclusion"><strong>Lesson:</strong> Riemann sees permanent local chaos. Lebesgue sees that the “problematic” set is negligible in measure.</div>
+</section>
+
+<section class="card">
+  <span class="section-number">14</span>
+  <h2>Experiment 9 · Thomae's function</h2>
+  <p class="formula">T(x)=1/q if x=p/q in lowest terms, 0 if x is irrational</p>
+  <div class="story-grid">
+    <div><h3>What is happening?</h3><p>Rational points create spikes, but most spikes are very small.</p></div>
+    <div><h3>Riemann view</h3><p>The large spikes are rare enough that small intervals can still control the total oscillation.</p></div>
+    <div><h3>Lebesgue view</h3><p>All non-zero values occur on the rational numbers, which form a set of measure zero.</p></div>
+  </div>
+  <div class="thomae-demo" id="thomaeDemo"></div>
+  <p class="formula">Riemann integral = Lebesgue integral = 0</p>
+  <div class="mini-conclusion"><strong>Lesson:</strong> dense discontinuities do not automatically destroy integrability. What matters is how “large” the problematic set really is.</div>
+</section>
+
+<section class="card">
+  <span class="section-number">15</span>
+  <h2>What should we learn from all the experiments?</h2>
+  <table>
+    <thead><tr><th>Function</th><th>Main idea</th></tr></thead>
+    <tbody>
+      <tr><td>sin(x)</td><td>Both methods work naturally on smooth functions.</td></tr>
+      <tr><td>x²</td><td>Clean benchmark for convergence.</td></tr>
+      <tr><td>Step function</td><td>Lebesgue grouping becomes very intuitive.</td></tr>
+      <tr><td>|x−0.5|</td><td>Same values can come from different x-regions.</td></tr>
+      <tr><td>1/√x</td><td>Large values can still have finite total contribution.</td></tr>
+      <tr><td>Indicator</td><td>Integral and measure are directly connected.</td></tr>
+      <tr><td>sin(x)/x</td><td>A single point does not change the integral.</td></tr>
+      <tr><td>Dirichlet</td><td>Main example where Lebesgue succeeds and Riemann fails.</td></tr>
+      <tr><td>Thomae</td><td>Dense irregularity can still be small in measure.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <span class="section-number">16</span>
+  <h2>Final conclusion</h2>
+  <p>The most important result of this homework is not a formula. It is a change in perspective.</p>
+  <p>Riemann tries to understand a function by looking at small regions of the domain. Lebesgue tries to understand it by grouping points according to the values they produce.</p>
+  <div class="key-message"><strong>Riemann asks “where are the points?”</strong><br><strong>Lebesgue asks “what values do the points have?”</strong></div>
+  <p>For regular functions, both approaches lead to the same integral. For irregular functions, the Lebesgue viewpoint can still make sense even when Riemann's local rectangle picture breaks down.</p>
+</section>
+
+<p class="footer-note">Homework 6 · Riemann and Lebesgue Integration</p>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
